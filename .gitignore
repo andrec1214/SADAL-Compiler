@@ -1,0 +1,4 @@
+*.o
+sadal
+sadal-lex
+sadal-parse
