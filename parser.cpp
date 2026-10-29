@@ -4,6 +4,8 @@
 using namespace std;
 map<string, bool> defVar;
 
+void ParseError(int line, string msg);
+
 namespace Parser {
     bool pushed_back = false;
     LexItem	pushed_token;
@@ -13,7 +15,11 @@ namespace Parser {
             pushed_back = false;
             return pushed_token;
         }
-        return getNextToken(in, line);
+        LexItem tok = getNextToken(in, line);
+        if (tok == ERR) {
+            ParseError(line, "Unrecognized Input Pattern (" + tok.GetLexeme() + ")");
+        }
+        return tok;
     }
 
     static void PushBackToken(LexItem & t) {
@@ -282,6 +288,7 @@ bool Stmt(istream& in, int& line) {
   LexItem tok = Parser::GetNextToken(in, line);
 
   if (tok == IDENT) {
+    Parser::PushBackToken(tok);
     return AssignStmt(in, line);
   }
 
@@ -343,10 +350,8 @@ bool GetStmt(istream& in, int& line) {
   LexItem tok = Parser::GetNextToken(in, line);
 
   if (tok == LPAREN) {
-    tok = Parser::GetNextToken(in, line);
-
-    if (tok != IDENT) {
-      ParseError(line, "placeholder line 333");
+    if (!Var(in, line)) {
+      ParseError(line, "Invalid get statement.");
       return false;
     }
 
@@ -446,11 +451,17 @@ bool IfStmt(istream& in, int& line) {
   return true;
 }
 
+// Var ::= IDENT
 bool Var(istream& in, int& line) {
   LexItem tok = Parser::GetNextToken(in, line);
 
   if (tok != IDENT) {
-    ParseError(line, "line 435");
+    ParseError(line, "Missing variable name.");
+    return false;
+  }
+
+  if (defVar.find(tok.GetLexeme()) == defVar.end()) {
+    ParseError(line, "Undeclared Variable");
     return false;
   }
 
@@ -459,9 +470,12 @@ bool Var(istream& in, int& line) {
 
 // AssignStmt ::= Var := Expr ;
 bool AssignStmt(istream& in, int& line) {
-  LexItem tok = Parser::GetNextToken(in, line);
-  string name = tok.GetLexeme();
+  if (!Var(in, line)) {
+    ParseError(line, "Invalid assignment statement.");
+    return false;
+  }
 
+  LexItem tok = Parser::GetNextToken(in, line);
   if (tok != ASSOP) {
     ParseError(line, "Missing Assignment Operator");
     ParseError(line, "Invalid assignment statement.");
@@ -474,20 +488,10 @@ bool AssignStmt(istream& in, int& line) {
     return false;
   }
 
-  // undeclared variable
-  if (defVar.find(name) == defVar.end()) {
-    ParseError(line, "placeholder line 459");
-    return false;
-  }
-
   tok = Parser::GetNextToken(in, line);
-
-  if (tok.GetLexeme() == ")") {
-    tok = Parser::GetNextToken(in, line);
-  }
-
   if (tok != SEMICOL) {
-    ParseError(line, "Missing semicolon. line 405");
+    ParseError(line - 1, "Missing semicolon at end of statement");
+    ParseError(line, "Invalid assignment statement.");
     return false;
   }
 
@@ -505,10 +509,6 @@ bool Expr(istream& in, int& line) {
 
   // next token
   tok = Parser::GetNextToken(in, line);
-
-  if (tok == IDENT) {
-    return false;
-  }
 
   // optional and/or relation
   while (tok == AND || tok == OR) {
@@ -636,10 +636,7 @@ bool Factor(istream& in, int& line, int sign) {
     if (tok == EXP) {
       tok = Parser::GetNextToken(in, line);
       // optional clause 2
-      if (tok == PLUS || tok == MINUS) {
-        tok = Parser::GetNextToken(in, line);
-      }
-      else {
+      if (tok != PLUS && tok != MINUS) {
         Parser::PushBackToken(tok);
       }
 
@@ -661,7 +658,7 @@ bool Primary(istream& in, int& line, int sign) {
   LexItem tok = Parser::GetNextToken(in, line);
 
   if (tok == IDENT) {
-    if (!defVar[tok.GetLexeme()]) {
+    if (defVar.find(tok.GetLexeme()) == defVar.end()) {
       ParseError(line, "Using Undefined Variable");
       ParseError(line, "Invalid reference to a variable.");
       return false;
@@ -731,8 +728,9 @@ bool Name(istream& in, int& line) {
       return false;
     }
   }
-
-  Parser::PushBackToken(tok);
+  else {
+    Parser::PushBackToken(tok);
+  }
 
   return true;
 }
@@ -759,7 +757,9 @@ bool Range(istream& in, int& line) {
       return false;
     }
   }
+  else {
+    Parser::PushBackToken(tok);
+  }
 
-  Parser::PushBackToken(tok);
   return true;
 }
