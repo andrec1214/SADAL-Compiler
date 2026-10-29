@@ -1,4 +1,4 @@
-# Recursive Descent Parser
+# SADAL Compiler
 
 A C++ lexer, recursive descent parser, and interpreter for the SADAL (Simple ADA-Like) language, originally built as part of a programming language concepts course project.
 
