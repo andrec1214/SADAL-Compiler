@@ -1,11 +1,30 @@
 # Recursive Descent Parser
 
-A C++ implementation of a recursive descent parser for the SADAL (Simple ADA-Like) language, built as part of a programming language concepts course project. Some parts involved private code, so if you're curious about the test cases and
-running it, feel free to reach out.
+A C++ lexer, recursive descent parser, and interpreter for the SADAL (Simple ADA-Like) language, originally built as part of a programming language concepts course project.
 
 ## Overview
 
-This parser implements the front-end of a compiler, handling lexical analysis and syntactic parsing for SADAL. The implementation uses recursive descent parsing based on 21 EBNF grammar production rules.
+The project has three stages, each with its own executable:
+
+| Program       | Files                                     | What it does                                          |
+|---------------|-------------------------------------------|-------------------------------------------------------|
+| `sadal-lex`   | `lex.h`, `lex.cpp`, `prog1.cpp`           | Prints the token stream of a source file              |
+| `sadal-parse` | `parser.h`, `parser.cpp`, `prog2.cpp`     | Checks syntax and lists the declared variables        |
+| `sadal`       | `parserInterp.*`, `val.*`, `prog3.cpp`    | Parses **and runs** the program                       |
+
+All three share the same lexer. Parsing is recursive descent over the 21 EBNF production rules below.
+
+## Building and Running
+
+```sh
+make                         # builds sadal-lex, sadal-parse and sadal
+./sadal tests/features.ada   # run a program
+./sadal-parse tests/example.ada
+./sadal-lex tests/example.ada
+make test                    # run the regression tests in tests/
+```
+
+`Get` reads from standard input, so you can pipe input in: `echo 42 | ./sadal tests/example.ada`.
 
 ## Features
 
@@ -16,7 +35,8 @@ This parser implements the front-end of a compiler, handling lexical analysis an
 - **Expression Parsing**: Supports arithmetic expressions with proper operator precedence (+, -, *, /, MOD, **)
 - **Control Flow**: IF-THEN-ELSIF-ELSE statements with nested conditions
 - **Boolean Logic**: AND/OR operations on relational expressions
-- **Array Indexing**: Range-based array access (e.g., `arr[1..10]`)
+- **String Indexing**: 1-based indexing and slicing, e.g. `s(1)` and `s(2..4)`
+- **Interpretation**: Programs are executed while they are parsed, with type checking and run-time errors
 
 ## Grammar Specification
 
@@ -74,9 +94,18 @@ The parser recognizes the complete SADAL language EBNF grammar:
 - **Productions**: 21 EBNF grammar rules implemented
 - **Operator Precedence**: Properly handles arithmetic and boolean operator precedence
 
-## Project Status
+## Language Semantics
 
-This is a front-end implementation focusing on lexical analysis and parsing. The parser builds the syntactic structure but does not include semantic analysis or code generation phases.
+The interpreter (`sadal`) follows Ada's rules where the grammar leaves room:
+
+- **Strong typing**: arithmetic operands must both be `INTEGER` or both `FLOAT`; there is no implicit conversion. Assignments and initializers must match the declared type.
+- **Operators**: `/` on integers truncates toward zero, `MOD` takes the sign of the divisor, `**` takes an `INTEGER` exponent (non-negative for an `INTEGER` base), and `&` concatenates `STRING`s and `CHARACTER`s.
+- **Precedence**: as in Ada, unary minus binds looser than `*`, `/`, `MOD`, and `**`, so `-7 MOD 3` is `-(7 MOD 3)`.
+- **Constants**: `x : CONSTANT INTEGER := 5;` must be initialized and cannot be assigned or read into.
+- **Input**: `Get` reads one whitespace-separated word for `INTEGER`, `FLOAT`, `CHARACTER`, and `BOOLEAN` (`true`/`false`), and the rest of the line for `STRING`.
+- **Lexical**: keywords are case-insensitive, identifiers are case-sensitive, and comments start with `--`.
+- **Run-time errors** (uninitialized variables, type mismatches, division by zero, index out of range) stop execution with a line number.
+- A range constraint in a declaration such as `s : STRING(1..10);` is accepted but not enforced.
 
 ## Example Input
 
@@ -102,4 +131,4 @@ END Example;
 
 ## Notes
 
-This was developed as part of a compilers course to understand parsing theory and implementation. The focus was on correctly implementing the grammar rules and handling tokenization, rather than building a complete compiler.
+This was developed as part of a compilers course to understand parsing theory and implementation. The original lexer and interpreter sources were lost and have since been rewritten, along with fixes to the parser (assignment statements, string indexing, ranges, and signed exponents).
