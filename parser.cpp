@@ -111,7 +111,7 @@ bool Prog(istream& in, int& line) {
 
   tok = Parser::GetNextToken(in, line);
   if (tok != IS) {
-    ParseError(line, "idk yet.");
+    ParseError(line, "Missing IS after procedure name.");
     return false;
   }
 
@@ -243,7 +243,7 @@ bool DeclStmt(istream& in, int& line) {
   tok = Parser::GetNextToken(in, line);
   if (tok == LPAREN) {
     if (!Range(in, line)) {
-      ParseError(line, "line 229");
+      ParseError(line, "Invalid range in declaration.");
       return false;
     }
 
@@ -258,7 +258,7 @@ bool DeclStmt(istream& in, int& line) {
 
   if (tok == ASSOP) {
     if (!Expr(in, line)) {
-      ParseError(line, "line 244");
+      ParseError(line, "Invalid initialization expression.");
       return false;
     }
 
@@ -266,7 +266,7 @@ bool DeclStmt(istream& in, int& line) {
   }
 
   if (tok != SEMICOL) {
-    ParseError(line, "Missing semicolon. line 252");
+    ParseError(line - 1, "Missing semicolon at end of statement");
     return false;
   }
 
@@ -304,7 +304,7 @@ bool Stmt(istream& in, int& line) {
     return IfStmt(in, line);
   }
 
-  ParseError(line, "placeholder. line 288");
+  ParseError(line, "Invalid statement.");
   return false;
 }
 
@@ -314,7 +314,7 @@ bool PrintStmts(istream& in, int& line) {
 
   if (tok == LPAREN) {
     if (!Expr(in, line)) {
-      ParseError(line, "placeholder line 298");
+      ParseError(line, "Invalid put statement.");
       return false;
     }
 
@@ -332,7 +332,7 @@ bool PrintStmts(istream& in, int& line) {
   }
   else {
     ParseError(line, "Missing Left Parenthesis");
-    ParseError(line, "Invalid Put Statement.");
+    ParseError(line, "Invalid put statement.");
     return false;
   }
 
@@ -357,7 +357,7 @@ bool GetStmt(istream& in, int& line) {
 
     tok = Parser::GetNextToken(in, line);
     if (tok != RPAREN) {
-      ParseError(line, "No closing paranthesis. line 339");
+      ParseError(line, "Missing Right Parenthesis");
       return false;
     }
 
@@ -365,12 +365,12 @@ bool GetStmt(istream& in, int& line) {
   }
 
   else {
-    ParseError(line, "placeholder line 347");
+    ParseError(line, "Missing Left Parenthesis");
     return false;
   }
 
   if (tok != SEMICOL) {
-    ParseError(line, "Missing semicolon. line 352");
+    ParseError(line - 1, "Missing semicolon at end of statement");
     return false;
   }
 
@@ -403,18 +403,18 @@ bool IfStmt(istream& in, int& line) {
   tok = Parser::GetNextToken(in, line);
   while (tok == ELSIF) {
     if (!Expr(in, line)) {
-      ParseError(line, "placeholder line 381");
+      ParseError(line, "Missing Elsif clause condition");
       return false;
     }
 
     tok = Parser::GetNextToken(in, line);
     if (tok != THEN) {
-      ParseError(line, "Missing then. line 387");
+      ParseError(line, "Missing THEN in Elsif clause.");
       return false;
     }
 
     if (!StmtList(in, line)) {
-      ParseError(line, "placeholder line 392");
+      ParseError(line, "Missing Statement for If-Stmt Elsif-clause");
       return false;
     }
 
@@ -423,7 +423,7 @@ bool IfStmt(istream& in, int& line) {
 
   if (tok == ELSE) {
     if (!StmtList(in, line)) {
-      ParseError(line, "placeholder line 401");
+      ParseError(line, "Missing Statement for If-Stmt Else-clause");
       return false;
     }
 
@@ -438,13 +438,13 @@ bool IfStmt(istream& in, int& line) {
 
   tok = Parser::GetNextToken(in, line);
   if (tok != IF) {
-    ParseError(line, "Missing if. line 419");
+    ParseError(line, "Missing IF after END in If-statement.");
     return false;
   }
 
   tok = Parser::GetNextToken(in, line);
   if (tok != SEMICOL) {
-    ParseError(line, "Missing semicolon. line 425");
+    ParseError(line - 1, "Missing semicolon at end of statement");
     return false;
   }
 
@@ -513,7 +513,7 @@ bool Expr(istream& in, int& line) {
   // optional and/or relation
   while (tok == AND || tok == OR) {
     if (!Relation(in, line)) {
-      ParseError(line, "placeholder line 488");
+      ParseError(line, "Missing operand after logical operator.");
       return false;
     }
 
@@ -535,7 +535,7 @@ bool Relation(istream& in, int& line) {
   tok = Parser::GetNextToken(in, line);
   if (tok == EQ || tok == NEQ || tok == LTHAN || tok == GTHAN || tok == LTE || tok == GTE) {
     if (!SimpleExpr(in, line)) {
-      ParseError(line, "placeholder line 509");
+      ParseError(line, "Missing operand after relational operator.");
       return false;
     }
   }
@@ -557,7 +557,7 @@ bool SimpleExpr(istream& in, int& line) {
   tok = Parser::GetNextToken(in, line);
   while (tok == PLUS || tok == MINUS || tok == CONCAT) {
     if (!STerm(in, line)) {
-      ParseError(line, "placeholder line 531");
+      ParseError(line, "Missing operand after additive operator.");
       return false;
     }
 
@@ -598,7 +598,7 @@ bool Term(istream& in, int& line, int sign) {
   tok = Parser::GetNextToken(in, line);
   while (tok == MULT || tok == DIV || tok == MOD) {
     if (!Factor(in, line, sign)) {
-      ParseError(line, "placeholder line 574");
+      ParseError(line, "Missing operand after multiplicative operator.");
       return false;
     }
 
@@ -616,7 +616,7 @@ bool Factor(istream& in, int& line, int sign) {
   // not block
   if (tok == NOT) {
     if (!Primary(in, line, sign)) {
-      ParseError(line, "placeholder line 592");
+      ParseError(line, "Missing operand after NOT.");
       return false;
     }
     return true;
@@ -641,7 +641,7 @@ bool Factor(istream& in, int& line, int sign) {
       }
 
       if (!Primary(in, line, sign)) {
-        ParseError(line, "placeholder line 620");
+        ParseError(line, "Missing exponent operand.");
         return false;
       }
     }
@@ -667,7 +667,7 @@ bool Primary(istream& in, int& line, int sign) {
     Parser::PushBackToken(tok);
 
     if (!Name(in, line)) {
-      ParseError(line, "placeholder line 635");
+      ParseError(line, "Invalid reference to a variable.");
       return false;
     }
 
@@ -693,13 +693,13 @@ bool Primary(istream& in, int& line, int sign) {
   }
 
   if (!Expr(in, line)) {
-    ParseError(line, "placeholder line 653");
+    ParseError(line, "Invalid expression in parentheses.");
     return false;
   }
 
   tok = Parser::GetNextToken(in, line);
   if (tok != RPAREN) {
-    ParseError(line, "Missing right paranthesis after expression");
+    ParseError(line, "Missing right parenthesis after expression");
     return false;
   }
 
@@ -711,20 +711,20 @@ bool Name(istream& in, int& line) {
   LexItem tok = Parser::GetNextToken(in, line);
 
   if (tok != IDENT) {
-    ParseError(line, "placeholder line 670");
+    ParseError(line, "Missing variable name.");
     return false;
   }
 
   tok = Parser::GetNextToken(in, line);
   if (tok == LPAREN) {
     if (!Range(in, line)) {
-      ParseError(line, "placeholder line 677");
+      ParseError(line, "Invalid index for variable.");
       return false;
     }
 
     tok = Parser::GetNextToken(in, line);
     if (tok != RPAREN) {
-      ParseError(line, "No closing paranthesis. line 683");
+      ParseError(line, "Missing right parenthesis after index.");
       return false;
     }
   }
@@ -740,7 +740,7 @@ bool Range(istream& in, int& line) {
   LexItem tok;
 
   if (!SimpleExpr(in, line)) {
-    ParseError(line, "placeholder line 698");
+    ParseError(line, "Missing lower bound in range.");
     return false;
   }
 
@@ -748,12 +748,12 @@ bool Range(istream& in, int& line) {
   if (tok == DOT) {
     tok = Parser::GetNextToken(in, line);
     if (tok != DOT) {
-      ParseError(line, "placeholder line 706");
+      ParseError(line, "Invalid range operator, expected '..'.");
       return false;
     }
 
     if (!SimpleExpr(in, line)) {
-      ParseError(line, "placeholder line 711");
+      ParseError(line, "Missing upper bound in range.");
       return false;
     }
   }
